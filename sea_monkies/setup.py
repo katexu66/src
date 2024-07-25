@@ -22,6 +22,8 @@ setup(
         'console_scripts': [
             'movement = sea_monkies.movement:main',
             'arming = sea_monkies.arming:main',
+            'PID = sea_monkies.PID:main',
+            'pressure = sea_monkies.pressure:main'
         ],
     },
 )

@@ -1,105 +1,99 @@
+#!/usr/bin/env python
+
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Imu
 from mavros_msgs.msg import ManualControl, Altitude
 
 
-class PIDController:
-    def __init__(self, kp, ki, kd, max_integral, min_output, max_output):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.max_integral = max_integral
-        self.min_output = min_output
-        self.max_output = max_output
-        self.integral = 0.0
-        self.previous_error = 0.0
-        self.error_accumulator = 0.0
+class DepthPIDNode(Node):
+    previous_error = 0.0
+    integral = 0.0
+    desired_depth: Altitude = None
+    previous_depth: Altitude = None
 
-    def reset(self):
-        self.integral = 0.0
-        self.previous_error = 0.0
-
-    def compute(self, error, dt):
-        self.integral += error * dt
-        self.integral = max(min(self.integral, self.max_integral), -self.max_integral)
-
-        derivative = (error - self.previous_error) / dt
-
-        proportional = self.kp * error
-        output = proportional + (self.ki * self.integral) + (self.kd * derivative)
-        output = max(min(output, self.max_output), self.min_output)
-
-        self.previous_error = error
-        return output
-
-
-class PIDNode(Node):
     def __init__(self):
-        super().__init__('move_node')
+        super().__init__("depth_pid_node")
 
-        self.move_publisher = self.create_publisher(
-            ManualControl,
-            'bluerov2/manual_control',
-            10
+        self.declare_parameter("Kp", -50.0)
+        self.Kp = self.get_parameter("Kp").value
+        self.declare_parameter("Ki", 0.0)
+        self.Ki = self.get_parameter("Ki").value
+        self.declare_parameter("Kd", 30.0)
+        self.Kd = self.get_parameter("Kd").value
+        self.declare_parameter("max_integral", 1.0)
+        self.max_integral = self.get_parameter("max_integral").value
+        self.declare_parameter("max_throttle", 100.0)
+        self.max_throttle = self.get_parameter("max_throttle").value
+
+        self.depth_sub = self.create_subscription(
+            Altitude, "bluerov2/depth", self.depth_callback, 10
         )
-        self.depth_subscriber = self.create_subscription(
-            Altitude,
-            'bluerov2/depth',
-            self.depth_callback,
-            10
+        self.desired_depth_sub = self.create_subscription(
+            Altitude, "bluerov2/desired_depth", self.desired_depth_callback, 10
         )
 
-        self.desired_depth_subscriber = self.create_subscription(
-            Altitude,
-            'bluerov2/desired_depth',
-            self.desired_depth_callback,
-            10
+        self.manual_control_pub = self.create_publisher(
+            ManualControl, "bluerov2/manual_control", 10
         )
 
-        self.get_logger().info('starting publisher node')
-        #self.pid_yaw = PIDController(0.5, 0.1, 0.05, 1.0, -50, 50)
-        self.pid_depth = PIDController(40, 5, 2, 10.0, -100.0, 100.0)
-        self.depth = 0.0
-        self.desired_depth = 0.0
-        self.vert_timer = self.create_timer(0.1, self.calc_publish_vertical)
-
-    
     def depth_callback(self, msg):
-            self.depth = msg.relative
-            #self.get_logger().info(f'Depth: {self.depth}')
+        depth: Altitude = msg
+        self.get_logger().debug(f"Depth: {depth}")
+
+        if self.desired_depth is None:
+            return
+
+        error = self.desired_depth.local - depth.local
+
+        if self.previous_depth is None:
+            self.previous_depth = depth
+            return
+
+        dt = (
+            depth.header.stamp.sec
+            + depth.header.stamp.nanosec * 1e-9
+            - self.previous_depth.header.stamp.sec
+            - self.previous_depth.header.stamp.nanosec * 1e-9
+        )
+
+        # Propotional term
+        propotional = self.Kp * error
+
+        # Integral term
+        self.integral += self.Ki * error * dt
+        self.integral = min(max(self.integral, -self.max_integral), self.max_integral)
+
+        # Derivative term
+        derivative = self.Kd * (error - self.previous_error) / dt
+
+        # Update previous values
+        self.previous_error = error
+        self.previous_depth = depth
+
+        throttle = propotional + self.integral + derivative
+        throttle = min(max(throttle, -self.max_throttle), self.max_throttle)
+
+        manual_control_msg = ManualControl()
+        manual_control_msg.z = throttle
+        self.manual_control_pub.publish(manual_control_msg)
 
     def desired_depth_callback(self, msg):
-        self.desired_depth = msg.relative
-        
-    def calc_publish_vertical(self):
-        if self.depth is not None:
-            depth_correction = self.pid_depth.compute(self.depth - self.desired_depth, 0.1)
-            movement = ManualControl()
-            movement.z = depth_correction
-            self.get_logger().info(f'\nError: {depth_correction}\nDepth: {self.depth}')
-            self.move_publisher.publish(movement)
+        self.desired_depth = msg
+        self.get_logger().debug(f"Desired depth: {self.desired_depth}")
 
-    def move_vertical(self, desired):
-        self.desired_depth = desired
-        if not self.vert_timer.is_ready():
-            self.vert_timer.reset()
-
-    def stop_timer(self):
-        self.vert_timer.cancel()
-        self.get_logger().info('Timer stopped.')
 
 def main(args=None):
     rclpy.init(args=args)
-    move_node = PIDNode()
-    try:
-        rclpy.spin(move_node)
-    except KeyboardInterrupt:
-        print('\nKeyboardInterrupt received, shutting down...')
-    finally:
-        move_node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+    depthPIDNode = DepthPIDNode()
 
-if __name__ == '__main__':
+    try:
+        rclpy.spin(depthPIDNode)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        depthPIDNode.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
     main()
