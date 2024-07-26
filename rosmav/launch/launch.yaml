@@ -10,16 +10,16 @@ launch:
     pkg: "sea_monkies"
     exec: "arming"
     name: "arming"
-    namesapce: ""
+    namespace: ""
 
 - node:
     pkg: "sea_monkies"
     exec: "movement"
     name: "dancing"
-    namesapce: ""
+    namespace: ""
 
 - node:
     pkg: "sea_monkies"
     exec: "pid_controller"
     name: "pid_controller"
-    namesapce: ""
+    namespace: ""
