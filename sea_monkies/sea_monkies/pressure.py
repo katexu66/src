@@ -25,6 +25,9 @@ class pressure_node(Node):
             10
         )
 
+        self.timer_period = 0.1  # seconds
+        self.timer = self.create_timer(self.timer_period, self.timer_callback)
+        
         self.get_logger().info("starting nodes")
 
     def pressure_callback(self, msg):
@@ -37,8 +40,13 @@ class pressure_node(Node):
         gravity = 9.81 # m/s2
         density = 1000 # kg/m3
         msg = Altitude()
+        msg.header.stamp = self.get_clock().now().to_msg()
         msg.local = self.pressure / (gravity * density)
         self.depth_pub.publish(msg)
+
+    def timer_callback(self):
+        if self.pressure > 0:
+            self.depth_calculation()
 
     def destroy_node(self):
         return super().destroy_node()

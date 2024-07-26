@@ -13,16 +13,12 @@ class DepthPIDNode(Node):
     def __init__(self):
         super().__init__("depth_pid_node")
 
-        self.declare_parameter("Kp", -50.0)
-        self.Kp = self.get_parameter("Kp").value
-        self.declare_parameter("Ki", 0.0)
-        self.Ki = self.get_parameter("Ki").value
-        self.declare_parameter("Kd", 30.0)
-        self.Kd = self.get_parameter("Kd").value
-        self.declare_parameter("max_integral", 1.0)
-        self.max_integral = self.get_parameter("max_integral").value
-        self.declare_parameter("max_throttle", 100.0)
-        self.max_throttle = self.get_parameter("max_throttle").value
+        self.Kp = -50.0
+        self.Ki = 0.0
+        self.Kd = 30.0
+        self.max_integral = 1.0
+        self.max_throttle = 100.0
+        self.desired_depth_value = 1
 
         self.depth_sub = self.create_subscription(
             Altitude, "bluerov2/bluerov2/depth", self.depth_callback, 10
@@ -36,6 +32,9 @@ class DepthPIDNode(Node):
         )
         
         self.get_logger().info("starting nodes")
+        
+        self.desired_depth = Altitude()
+        self.desired_depth.local = self.desired_depth_value
 
     def depth_callback(self, msg):
         depth: Altitude = msg
@@ -56,6 +55,10 @@ class DepthPIDNode(Node):
             - self.previous_depth.header.stamp.sec
             - self.previous_depth.header.stamp.nanosec * 1e-9
         )
+        
+        if dt == 0:
+            self.get_logger().warn("dt is zero, skipping this update")
+            return
 
         # Propotional term
         propotional = self.Kp * error
@@ -80,7 +83,7 @@ class DepthPIDNode(Node):
 
     def desired_depth_callback(self, msg):
         self.desired_depth = msg
-        self.get_logger().info(f"Desired depth: {self.desired_depth}")
+        self.get_logger().info(f"Desired depth: {self.desired_depth.local}")
 
 def main(args=None):
     rclpy.init(args=args)
