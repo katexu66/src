@@ -1,4 +1,4 @@
-launch:
+launch: # launch nodes by running "ros2 launch rosmav launch.yaml"
 
 - node:
     pkg: "rosmav"
@@ -12,14 +12,20 @@ launch:
     name: "arming"
     namespace: ""
 
-- node:
-    pkg: "sea_monkies"
-    exec: "movement"
-    name: "dancing"
-    namespace: ""
+# - node:
+#     pkg: "sea_monkies"
+#     exec: "movement"
+#     name: "dancing"
+#     namespace: ""
 
-- node:
-    pkg: "sea_monkies"
-    exec: "pid_controller"
-    name: "pid_controller"
-    namespace: ""
+# - node:
+#     pkg: "sea_monkies"
+#     exec: "pressure"
+#     name: "pressure"
+#     namespace: ""
+
+# - node:
+#     pkg: "sea_monkies"
+#     exec: "pid_controller"
+#     name: "pid_controller"
+#     namespace: ""

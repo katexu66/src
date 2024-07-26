@@ -14,31 +14,31 @@ class pressure_node(Node):
 
         self.sub = self.create_subscription(
             Pressure,
-            "bluerov2/pressure",
+            "bluerov2/bluerov2/pressure",
             self.pressure_callback,
             10
         )
 
         self.depth_pub = self.create_publisher(
             Altitude,
-            "bluerov2/depth",
+            "bluerov2/bluerov2/depth",
             10
         )
 
-        self.get_logger().info("starting subscriber nodes")
+        self.get_logger().info("starting nodes")
 
     def pressure_callback(self, msg):
         self.get_logger().info(f"Pressure: {msg.fluid_pressure}")
         self.pressure = msg.fluid_pressure
         self.depth_calculation()
 
-    def depth_calculation(self, msg):
+    def depth_calculation(self):
         # p = p*g*h
         gravity = 9.81 # m/s2
         density = 1000 # kg/m3
         msg = Altitude()
-        msg.local = self.pressure/(gravity*density)
-        self.publisher.publish(msg)
+        msg.local = self.pressure / (gravity * density)
+        self.depth_pub.publish(msg)
 
     def destroy_node(self):
         return super().destroy_node()

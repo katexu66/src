@@ -4,7 +4,6 @@ import rclpy
 from rclpy.node import Node
 from mavros_msgs.msg import ManualControl, Altitude
 
-
 class DepthPIDNode(Node):
     previous_error = 0.0
     integral = 0.0
@@ -26,19 +25,21 @@ class DepthPIDNode(Node):
         self.max_throttle = self.get_parameter("max_throttle").value
 
         self.depth_sub = self.create_subscription(
-            Altitude, "bluerov2/depth", self.depth_callback, 10
+            Altitude, "bluerov2/bluerov2/depth", self.depth_callback, 10
         )
         self.desired_depth_sub = self.create_subscription(
-            Altitude, "bluerov2/desired_depth", self.desired_depth_callback, 10
+            Altitude, "bluerov2/bluerov2/desired_depth", self.desired_depth_callback, 10
         )
 
         self.manual_control_pub = self.create_publisher(
-            ManualControl, "bluerov2/manual_control", 10
+            ManualControl, "bluerov2/bluerov2/manual_control", 10
         )
+        
+        self.get_logger().info("starting nodes")
 
     def depth_callback(self, msg):
         depth: Altitude = msg
-        self.get_logger().debug(f"Depth: {depth}")
+        self.get_logger().info(f"Depth: {depth}")
 
         if self.desired_depth is None:
             return
@@ -79,7 +80,7 @@ class DepthPIDNode(Node):
 
     def desired_depth_callback(self, msg):
         self.desired_depth = msg
-        self.get_logger().debug(f"Desired depth: {self.desired_depth}")
+        self.get_logger().info(f"Desired depth: {self.desired_depth}")
 
 
 def main(args=None):
