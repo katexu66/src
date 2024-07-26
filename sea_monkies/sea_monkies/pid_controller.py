@@ -82,7 +82,6 @@ class DepthPIDNode(Node):
         self.desired_depth = msg
         self.get_logger().info(f"Desired depth: {self.desired_depth}")
 
-
 def main(args=None):
     rclpy.init(args=args)
     depthPIDNode = DepthPIDNode()
