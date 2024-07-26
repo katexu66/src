@@ -26,9 +26,6 @@ setup(
     entry_points={
         "console_scripts": [
             "ros_bluerov2_interface = rosmav.ros_bluerov2_interface:main",
-            "arming = sea_monkies.arming:main",
-            "movement = sea_monkies.movement:main",
-            "PID = sea_monkies.PID:main"
         ],
     },
 )

@@ -18,7 +18,6 @@ class DepthPIDNode(Node):
         self.Kd = 30.0
         self.max_integral = 1.0
         self.max_throttle = 100.0
-        self.desired_depth_value = 1
 
         self.depth_sub = self.create_subscription(
             Altitude, "bluerov2/bluerov2/depth", self.depth_callback, 10
@@ -32,13 +31,10 @@ class DepthPIDNode(Node):
         )
         
         self.get_logger().info("starting nodes")
-        
-        self.desired_depth = Altitude()
-        self.desired_depth.local = self.desired_depth_value
 
     def depth_callback(self, msg):
         depth: Altitude = msg
-        self.get_logger().info(f"Depth: {depth}")
+        self.get_logger().info(f"Depth: {depth.local}")
 
         if self.desired_depth is None:
             return
