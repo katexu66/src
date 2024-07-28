@@ -25,7 +25,7 @@ class ArmingDisarmingNode(Node):
         self.get_logger().info("Armed!")
 
         # Dance for me for 10 seconds
-        sleep(1000)
+        sleep(2000)
 
         # Disarm
         disarm_future = self._disarm()
