@@ -13,11 +13,11 @@ class HeadingPIDNode(Node):
         self.previous_error = 0.0
 
         self.heading_sub = self.create_subscription(
-            Int16, "bluerov2/bluerov2/heading", self.heading_callback, 10
+            Int16, "bluerov2/heading", self.heading_callback, 10
         )
 
         self.angularv_sub = self.create_subscription(
-            Imu, "bluerov2/bluerov2/imu", self.angularv_callback, 10
+            Imu, "bluerov2/imu", self.angularv_callback, 10
         )
 
         # self.desired_heading_sub = self.create_subscription(

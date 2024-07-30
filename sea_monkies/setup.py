@@ -24,7 +24,8 @@ setup(
             'arming = sea_monkies.arming:main',
             'pid_controller = sea_monkies.pid_controller:main',
             'pressure = sea_monkies.pressure:main',
-            'angle_controller = sea_monkies.angle_controller:main'
+            'angle_controller = sea_monkies.angle_controller:main',
+            'cam = sea_monkies.live_apriltag:main'
         ],
     },
 )

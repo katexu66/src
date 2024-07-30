@@ -13,7 +13,7 @@ class ArmingDisarmingNode(Node):
     def __init__(self):
         super().__init__("arming_disarming_node")
 
-        self.arming_client = self.create_client(SetBool, "bluerov2/bluerov2/arming")
+        self.arming_client = self.create_client(SetBool, "bluerov2/arming")
 
         while not self.arming_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("BlueROV2 arming service not available, waiting...")
