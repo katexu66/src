@@ -25,7 +25,8 @@ setup(
             'pid_controller = sea_monkies.pid_controller:main',
             'pressure = sea_monkies.pressure:main',
             'angle_controller = sea_monkies.angle_controller:main',
-            'cam = sea_monkies.live_apriltag:main'
+            'cam = sea_monkies.live_apriltag:main',
+            'lights = sea_monkies.lights:main'
         ],
     },
 )
