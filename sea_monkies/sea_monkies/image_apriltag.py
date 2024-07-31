@@ -27,5 +27,22 @@ for tag in tags:
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                 fontScale=0.8,
                 color=(0, 0, 255))
+    
+    translation = tag.pose_t #translation vector/position of tag in camera frame (x,y,z axes)
+    distance = tag.pose_t[2] #z-axis for distance
+    rotation = tag.pose_R
+    tag_id = tag.tag_id
+    corners = tag.corners #x,y coordinates of 4 corners detected
+    center = tag.center #x,y coordinates of center of tag detected
+    decision_margin = tag.decision_margin #how confident it is in the detection (higher = more confident)
+    
+    print(f"Tag ID: {tag_id}")
+    print(f"Corners: {corners}")
+    print(f"Center: {center}")
+    #print(f"Decision Margin: {decision_margin}")
+    print(f"Translation: {translation}")
+    print(f"Distance: {distance}")
+    #print(f"Rotation: {rotation}")
+    print("---")
 
 plt.imshow(color_img)

@@ -236,11 +236,6 @@ def main(args=None):
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt received, shutting down...')
     finally:
-        x = np.arange(0,len(move_node.array))
-
-        plt.plot(x,move_node.array)
-        plt.savefig("/home/katexu66/auvc_ws/src/sea_monkies/sea_monkies/depth_err.png")
-        
         move_node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

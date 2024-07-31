@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from std_msgs.msg import Int16
 
 import cv2
 import numpy as np
@@ -45,8 +46,9 @@ class ImageSubscriber(Node):
                             refine_edges=1,
                             decode_sharpening=0.25,
                             debug=0)
-
-        tags = at_detector.detect(img, estimate_tag_pose=False, camera_params=None, tag_size=None)
+        
+        camera_params = (1061, 1061, 2000/2, 1121/2) #fx, fy, cx, cy
+        tags = at_detector.detect(img, estimate_tag_pose=True, camera_params=camera_params, tag_size=0.1)
         color_img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
         for tag in tags:
@@ -58,9 +60,23 @@ class ImageSubscriber(Node):
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=0.8,
                         color=(0, 0, 255))
+            
+            translation = tag.pose_t #translation vector/position of tag in camera frame (x,y,z axes)
+            distance = tag.pose_t[2]/2.8 #z-axis for distance
+            #rotation = tag.pose_R
+            tag_id = tag.tag_id
+            corners = tag.corners #x,y coordinates of 4 corners detected
+            center = tag.center #x,y coordinates of center of tag detected
+            
+            self.get_logger().info(f"Tag ID: {tag_id}")
+            self.get_logger().info(f"Corners: {corners}")
+            self.get_logger().info(f"Center: {center}")
+            self.get_logger().info(f"Translation: {translation}")
+            self.get_logger().info(f"Distance: {distance}")
+            #self.get_logger().info(f"Rotation: {rotation}")
+            self.get_logger().info("---")
 
-        cv2.imwrite("detected.png", color_img)
-
+        cv2.imwrite("detected.png", color_img) #try indenting
 
 def main(args=None):
     rclpy.init(args=args)
