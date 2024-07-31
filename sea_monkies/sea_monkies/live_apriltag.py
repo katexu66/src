@@ -48,12 +48,14 @@ class ImageSubscriber(Node):
             self.heading_callback,
             10
         )
+        
+        self.get_logger().info('starting nodes')
 
     def timer_callback(self):
         self.subscription = self.create_subscription(
             Image, "bluerov2/camera", self.image_callback, 10
         )
-        self.get_logger().info('getting camera data')
+        #self.get_logger().info('getting camera data')
 
     def heading_callback(self, msg):
         self.angle = msg.data
@@ -95,7 +97,7 @@ class ImageSubscriber(Node):
                 distance = tag.pose_t[2]/2.8 #z-axis for distance
                 #rotation = tag.pose_R
                 tag_id = tag.tag_id
-                corners = tag.corners #x,y coordinates of 4 corners detected
+                #corners = tag.corners #x,y coordinates of 4 corners detected
                 self.center = tag.center #x,y coordinates of center of tag detected
 
                 if self.center[0] > 400:
@@ -110,7 +112,7 @@ class ImageSubscriber(Node):
                 self.publisher.publish(msg)
             
                 self.get_logger().info(f"Tag ID: {tag_id}")
-                self.get_logger().info(f"Corners: {corners}")
+                #self.get_logger().info(f"Corners: {corners}")
                 self.get_logger().info(f"Center: {self.center}")
                 self.get_logger().info(f"Translation: {translation}")
                 self.get_logger().info(f"Distance: {distance}")
