@@ -26,7 +26,8 @@ setup(
             'pressure = sea_monkies.pressure:main',
             'angle_controller = sea_monkies.angle_controller:main',
             'cam = sea_monkies.live_apriltag:main',
-            'lights = sea_monkies.lights:main'
+            'lights = sea_monkies.lights:main',
+            'timer = sea_monkies.timer:main'
         ],
     },
 )

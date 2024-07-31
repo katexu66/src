@@ -23,15 +23,18 @@ class ImageSubscriber(Node):
                     refine_edges=1,
                     decode_sharpening=0.25,
                     debug=0)
-
+        
         super().__init__("image_subscriber")
+        
+        self.timer_period = 0.5  # seconds
+        self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
         self.cvb = CvBridge()
 
-        self.subscription = self.create_subscription(
-            Image, "bluerov2/camera", self.image_callback, 10
-        )
-        self.get_logger().info('starting camera subscriber')
+        # self.subscription = self.create_subscription(
+        #     Image, "bluerov2/camera", self.image_callback, 10
+        # )
+        # self.get_logger().info('starting camera subscriber')
 
         self.publisher = self.create_publisher(
             Int16,
@@ -45,6 +48,12 @@ class ImageSubscriber(Node):
             self.heading_callback,
             10
         )
+
+    def timer_callback(self):
+        self.subscription = self.create_subscription(
+            Image, "bluerov2/camera", self.image_callback, 10
+        )
+        self.get_logger().info('getting camera data')
 
     def heading_callback(self, msg):
         self.angle = msg.data
