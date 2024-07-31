@@ -1,97 +1,138 @@
-#!/usr/bin/env python
-
 import rclpy
 from rclpy.node import Node
-# from mavros_msgs.msg import Imu
 from sensor_msgs.msg import Imu
+from mavros_msgs.msg import ManualControl, Altitude
 from std_msgs.msg import Int16
-import math
+
 import numpy as np
-from mavros_msgs.msg import ManualControl
+import math
+import matplotlib.pyplot as plt
 
-class HeadingPIDNode(Node):
 
+class PIDHeadingNode(Node):
     def __init__(self):
-        super().__init__("heading_pid_node")
-
-        # self.previous_error = 0.0
-        self.kp = 1
-        self.kd = 0.1
-        self.angle = 0
-
-        self.heading_sub = self.create_subscription(
-            Int16, "bluerov2/heading", self.heading_callback, 10
-        )
-
-        self.angularv_sub = self.create_subscription(
-            Imu, "bluerov2/imu", self.angularv_callback, 10
-        )
-
-        self.desired_heading_pub = self.create_publisher(
-            Int16, "bluerov2/desired_heading", 10
-        )
-
-        self.desired_heading_sub = self.create_subscription(
-            Int16, "bluerov2/desired_heading", self.desired_heading_callback, 10
-        )
-
+        super().__init__('heading_node')
+        #subscribers/publishers for necessary topics
         self.move_publisher = self.create_publisher(
-            ManualControl, 'bluerov2/manual_control', 10
+            ManualControl,
+            'bluerov2/manual_control',
+            10
         )
-        
-        self.get_logger().info("starting nodes")
+        self.heading_subscriber = self.create_subscription(
+            Int16,
+            'bluerov2/heading',
+            self.heading_callback,
+            10
+        )
 
-    def angularv_callback(self, msg):
-        self.angularv = ((msg.angular_velocity.x)**2 + (msg.angular_velocity.y)**2 + (msg.angular_velocity.z)**2)**0.5
-        self.get_logger().info(f"angular velocity: {self.angularv}")
+        self.desired_heading_subscriber = self.create_subscription(
+            Int16,
+            'bluerov2/desired_heading',
+            self.desired_heading_callback,
+            10
+        )
+        self.heading_derivative_subscriber = self.create_subscription(
+            Imu,
+            'bluerov2/imu',
+            self.heading_derivative_callback,
+            10
+        )
+        """
+        PID CONSTANTS
+        """
+        self.kp = 2
+        self.kd = 1
+        self.min_output = -30.0
+        self.max_output = 30.0
+        self.previous_error = 0.0
+        """"""
+
+        self.get_logger().info('starting publisher node')
+        #self.pid_yaw = PIDController(0.5, 0.1, 0.05, 1.0, -50, 50)
+        """
+        tracking constants
+        """
+        self.heading = None
+        self.desired_heading = None
+        self.heading_derivative = 0.0      
+        self.array = np.array([])
+
+
+    def compute(self, error):
+        """
+        computes and logs the correction power based on the angle error and angular velocity in rad/s as derivative
+        """
+        #tracking
+        self.array = np.append(self.array, [(error)])
+
+        #p and d calcs and return output
+        self.derivative = self.heading_derivative
+        proportional = self.kp * error
+        output = proportional + (self.kd * self.derivative)
+
+        #more tracking
+        self.get_logger().info(f'\n Kp: {proportional} Kd: {self.kd *self.derivative} CurrentHeading: {self.heading}')
+        
+        #updates/clamping output
+        output = max(min(output, self.max_output), self.min_output)
+        self.previous_error = error
+        return output
 
     def heading_callback(self, msg):
-        self.angle = msg.data
+        """logs and stores int16 heading from subscriber"""
+        self.heading = msg.data
+        if self.desired_heading != None:
+            self.calc_publish_heading()
+        #self.get_logger().info(f'Depth: {self.depth}, Timestamp: {self.timestamp}')
 
-    def run_node(self):
-        msg = Int16
-        if self.center[0] > 400:
-            self.desired_heading = self.angle + 5
-        elif self.center[0] < 240:
-            self.desired_heading = self.angle - 5
 
     def desired_heading_callback(self, msg):
-        self.desired = msg.data
-        self.angle_thrust(self.desired, self.angle)
+        """logs and stores desired heading from publisher in int16 and converts degrees to rads"""
+        self.desired_heading = msg.data
+        self.desired_heading = self.desired_heading
 
-    def angle_thrust(self, desired, initial):
-        # this section calculates the porportional thrust
-        theta = min(abs(desired + 360 - initial), abs(initial + 360 - desired))
-        theta2 = min(abs(desired - initial), abs(initial - desired))
-        angle = min(theta, theta2)
         
-        # the first number (0-100) is the amount of speed 180 degrees is set to
-        thrust = 40 * math.sin(math.pi/360*angle)
-        # clockwise = True
-        if (initial - desired) <= 0:
-            # clockwise = False
-            thrust *= (-1)
-        # porportional ends here
+    def heading_derivative_callback(self, msg):
+        """logs and stores angular velocity in deg/s from imu"""
+        self.heading_derivative = msg.angular_velocity.z * 180/math.pi
+    def calc_publish_heading(self):
+        """calculates angular error using mod function and receives/publishes correction to manual control"""
+        #checks to make sure that a heading has been recieved
+        if self.heading is not None:
+            #error calc
+            error1 = ((self.desired_heading - self.heading + 180) % 360 - 180)/1.8
+           # error2 = math.abs(100*math.sin(math.pi/180*x))*math.sin(x*math.pi/180)/math.abs(math.sin(x*math.pi/180))
+            heading_correction = self.compute(error1)
 
-        pid = self.kp * thrust + self.kd * self.angularv
-        
-        movement = ManualControl()
-        movement.r = pid
-        self.move_publisher.publish(pid)
+            #publishing movement
+            movement = ManualControl()
+
+            movement.r = heading_correction
+            self.get_logger().info(f'\nCurrent Power: {heading_correction}/100\nHeading: {self.heading}')
+            self.move_publisher.publish(movement)
 
 
 def main(args=None):
     rclpy.init(args=args)
-    headingPIDNode = HeadingPIDNode()
-
+    move_node = PIDHeadingNode()
     try:
-        rclpy.spin(headingPIDNode)
+        rclpy.spin(move_node)
     except KeyboardInterrupt:
-        pass
+        print('\nKeyboardInterrupt received, shutting down...')
     finally:
-        headingPIDNode.destroy_node()
-        rclpy.try_shutdown()
-
-
-if __name__ == "__main__":
+        move_node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+if __name__ == '__main__':
     main()
+
+
+
+
+"""
+- node:
+    pkg: "intro_to_ros"
+    exec: "pid"
+    name: "pid"
+    namespace: ""
+"""
