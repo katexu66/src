@@ -24,11 +24,11 @@ launch: # launch nodes by running "ros2 launch rosmav launch.yaml"
 #     name: "dancing"
 #     namespace: ""
 
-- node:
-    pkg: "sea_monkies"
-    exec: "pressure"
-    name: "pressure"
-    namespace: ""
+# - node:
+#     pkg: "sea_monkies"
+#     exec: "pressure"
+#     name: "pressure"
+#     namespace: ""
 
 # - node:
 #     pkg: "sea_monkies"
